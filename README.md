@@ -39,10 +39,6 @@ python main.py
 > KoNLPy JVM 초기화(최대 30초)는 서버 시작 후 백그라운드에서 자동 진행됩니다.  
 > 우측 상단 **KoNLPy ✓ / SentiLex ✓** 배지가 초록색이 되면 분석 준비 완료.
 
-```bash
-docker-compose down   # 종료
-```
-
 ---
 
 ## 📁 프로젝트 구조

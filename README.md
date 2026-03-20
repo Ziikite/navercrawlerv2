@@ -24,37 +24,78 @@
 
 ## 🚀 실행 방법
 
+### 방법 1 — Docker (권장)
+
 ```bash
-# 1. 패키지 설치 (최초 1회)
-pip install -r requirements.txt
+cd naver-dashboard
+docker-compose up -d --build
 
-# 2. 서버 실행
-python main.py
-
-
-# 3. → http://localhost:8000 접속
+# http://localhost:8000 접속
 ```
 
 > 첫 빌드 시 Java + Python 패키지 설치로 2~5분 소요.  
 > KoNLPy JVM 초기화(최대 30초)는 서버 시작 후 백그라운드에서 자동 진행됩니다.  
 > 우측 상단 **KoNLPy ✓ / SentiLex ✓** 배지가 초록색이 되면 분석 준비 완료.
 
+```bash
+docker-compose down   # 종료
+```
+
+---
+
+### 방법 2 — Python 직접 실행 (Java 필요)
+
+```bash
+# 1. Java 17+ 설치 확인
+java -version
+
+# 2. 의존성 설치
+cd naver-dashboard/backend
+pip install -r requirements.txt
+
+# 3. 서버 실행
+python main.py
+
+# 4. http://localhost:8000 접속
+```
+
 ---
 
 ## 📁 프로젝트 구조
 
 ```
-navercrawlerv2/
-├── main.py
-├── naver.py
-├── nlp.py
-├── requirements.txt
-└── frontend/
-    └── index.html  
+naver-dashboard/
+├── backend/
+│   ├── main.py          # FastAPI 앱
+│   ├── naver.py         # 네이버 API 클라이언트 (페이지네이션)
+│   ├── nlp.py           # KoNLPy + KNU SentiLex + 분석 로직
+│   ├── requirements.txt
+│   └── data/            # KnuSentiLex.json (자동 다운로드)
+├── frontend/
+│   └── index.html       # 대시보드 UI (Chart.js + D3.js)
+├── Dockerfile
+├── docker-compose.yml
+└── README.md
 ```
 
 ---
 
+## 🌐 외부 배포
+
+**Railway (GitHub 연동, 무료)**
+```bash
+# GitHub Push 후 railway.app에서 연결
+# Root directory: backend
+# Start command: uvicorn main:app --host 0.0.0.0 --port $PORT
+```
+
+**Fly.io**
+```bash
+fly launch
+fly deploy
+```
+
+---
 
 ## API 엔드포인트
 

@@ -187,6 +187,7 @@ def sentiment_analysis(items: list[dict]) -> dict:
         "top_positive": sorted_all[:5],
         "top_negative": sorted_all[-5:][::-1],
         "timeline": _sentiment_timeline(records),
+        "articles": records,   # ← 게시글별 감정 점수 전체
     }
 
 

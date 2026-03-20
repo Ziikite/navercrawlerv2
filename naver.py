@@ -7,7 +7,7 @@ from typing import Optional
 
 BASE = "https://openapi.naver.com/v1/search/{type}.json"
 
-TYPE_MAP = {"news": "news", "blog": "blog", "web": "webkr"}
+TYPE_MAP = {"news": "news", "blog": "blog", "web": "webkr", "cafe": "cafearticle"}
 
 
 def _headers(client_id: str, client_secret: str) -> dict:
@@ -25,7 +25,7 @@ def _clean(text: str) -> str:
 
 def _parse_date(item: dict, stype: str) -> Optional[date]:
     try:
-        if stype == "blog":
+        if stype in ("blog", "cafe"):
             d = item.get("postdate", "")
             if d and len(d) == 8:
                 return date(int(d[:4]), int(d[4:6]), int(d[6:8]))

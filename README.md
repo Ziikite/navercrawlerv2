@@ -24,8 +24,6 @@
 
 ## 🚀 실행 방법
 
-### 방법 1 — Docker (권장)
-
 ```bash
 # 1. 패키지 설치 (최초 1회)
 pip install -r requirements.txt

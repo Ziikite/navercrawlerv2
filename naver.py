@@ -24,17 +24,37 @@ def _clean(text: str) -> str:
 
 
 def _parse_date(item: dict, stype: str) -> Optional[date]:
+    """날짜 파싱 — 여러 필드를 순차적으로 시도."""
+    # 1) postdate (blog, cafe: YYYYMMDD)
     try:
-        if stype in ("blog", "cafe"):
-            d = item.get("postdate", "")
-            if d and len(d) == 8:
-                return date(int(d[:4]), int(d[4:6]), int(d[6:8]))
-        else:
-            pub = item.get("pubDate", "")
-            if pub:
-                return parsedate_to_datetime(pub).date()
+        d = item.get("postdate", "")
+        if d and len(d) == 8 and d.isdigit():
+            return date(int(d[:4]), int(d[4:6]), int(d[6:8]))
     except Exception:
         pass
+
+    # 2) pubDate (news, web: RFC 2822)
+    try:
+        pub = item.get("pubDate", "")
+        if pub:
+            return parsedate_to_datetime(pub).date()
+    except Exception:
+        pass
+
+    # 3) 기타 형식 (YYYY-MM-DD, YYYY.MM.DD 등)
+    try:
+        for field in ("pubDate", "postdate", "date"):
+            val = (item.get(field) or "").strip()
+            if not val:
+                continue
+            for fmt in ("%Y-%m-%d", "%Y.%m.%d", "%Y/%m/%d"):
+                try:
+                    return datetime.strptime(val[:10], fmt).date()
+                except ValueError:
+                    continue
+    except Exception:
+        pass
+
     return None
 
 
@@ -85,20 +105,25 @@ async def fetch_all(
             d = _parse_date(item, stype)
             item["parsed_date"] = d.isoformat() if d else None
 
-            if date_from and date_to:
+            if date_from and date_to and stype != "cafe":
+                # 카페 API는 날짜 필드 없음 → 날짜 필터 스킵
                 if d is None:
+                    # 날짜 파싱 불가 → 범위 판단 못하므로 일단 포함
+                    results.append(item)
                     continue
                 if d < date_from:
+                    # 최신순 정렬이므로 이 이후는 전부 범위 밖 → 수집 중단
                     stop = True
                     break
                 if d <= date_to:
                     results.append(item)
+                # d > date_to: 아직 범위 전 → continue (스킵하되 중단하지 않음)
             else:
                 results.append(item)
 
         if stop or len(items) < 100:
             break
         start += 100
-        await asyncio.sleep(0.1)   # gentle pacing
+        await asyncio.sleep(0.1)
 
     return results[:max_items]

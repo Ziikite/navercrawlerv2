@@ -2,114 +2,475 @@
 
 네이버 Open API 기반 실시간 검색 분석 대시보드
 
+코딩을 전혀 몰라도 이 문서만 따라 하면 **10분 안에 실행**할 수 있습니다.
+
+---
+
+## 📋 목차
+
+1. [무엇을 하는 프로그램인가요?](#1-무엇을-하는-프로그램인가요)
+2. [네이버 API 키 발급](#2-네이버-api-키-발급)
+3. [Mac에서 실행하기](#3-mac에서-실행하기)
+4. [Windows에서 실행하기](#4-windows에서-실행하기)
+5. [대시보드 사용 방법](#5-대시보드-사용-방법)
+6. [기능 설명](#6-기능-설명)
+7. [자주 묻는 질문](#7-자주-묻는-질문)
+
+---
+
+## 1. 무엇을 하는 프로그램인가요?
+
+네이버에서 특정 키워드를 검색하고, 결과를 자동으로 수집해서 분석해 주는 대시보드입니다.
+
 | 기능 | 설명 |
 |------|------|
-| 최신 5개 게시글 | 뉴스/블로그/웹문서 최신 결과 |
-| 키워드 빈도 분석 | KoNLPy Okt 명사 추출 → 상위 20 키워드 |
-| 감정 분석 | KNU SentiLex 기반 긍정/부정/중립 분류 |
-| 연관어 네트워크 | 공동출현 그래프 (D3 force-directed) |
-| 자동 페이지네이션 | 기간 내 최대 1,000건 수집 |
+| 📰 최신 게시글 Top 5 | 뉴스 / 블로그 / 카페 / 웹문서 최신 결과 |
+| 📊 키워드 빈도 분석 | 자주 등장하는 단어 상위 20개 시각화 |
+| 💬 감정 분석 | KNU SentiLex 기반 긍정 / 부정 / 중립 분류 |
+| 📋 게시글별 감정 분석 | 수집된 모든 게시글의 감정 점수 테이블 |
+| 🕸 연관어 네트워크 | 함께 등장하는 단어들의 관계 그래프 |
+| ✉ 이메일 리포트 발송 | 분석 결과를 HTML 리포트로 이메일 전송 |
 
 ---
 
-## 🔑 네이버 API 키 발급
+## 2. 네이버 API 키 발급
 
-1. https://developers.naver.com → 로그인
-2. **애플리케이션 등록** → 이름 입력
-3. **사용 API**: `검색` 체크
-4. **환경 추가**: `WEB 설정` → localhost 등록
-5. **Client ID** / **Client Secret** 복사 → 대시보드에 입력
+> 이 프로그램은 네이버 Open API를 사용합니다. API 키는 무료로 발급받을 수 있습니다.
+
+### 순서
+
+**① 네이버 개발자 센터 접속**
+
+→ https://developers.naver.com 에 접속해서 네이버 계정으로 로그인합니다.
+
+**② 애플리케이션 등록**
+
+상단 메뉴에서 **Application → 애플리케이션 등록** 클릭
+
+**③ 정보 입력**
+
+| 항목 | 입력값 |
+|------|--------|
+| 애플리케이션 이름 | 아무 이름이나 (예: `검색분석`) |
+| 사용 API | `검색` 체크 ✅ |
+| 환경 | `WEB 설정` 선택 → 서비스 URL에 `http://localhost` 입력 |
+
+**④ 키 복사**
+
+등록 완료 후 나오는 **Client ID**와 **Client Secret**을 어딘가에 메모해 두세요.  
+대시보드 실행 후 입력창에 붙여넣으면 됩니다.
+
+> ⚠️ **주의사항**: 네이버 검색 API는 하루 25,000건까지 무료로 사용 가능합니다.
 
 ---
 
-## 🚀 실행 방법
+## 3. Mac에서 실행하기
 
-### 방법 1 — Docker (권장)
+### 사전 준비: Python 설치 확인
+
+터미널을 열고 (Spotlight에서 `터미널` 검색) 아래 명령어를 입력하세요.
 
 ```bash
-cd naver-dashboard
-docker-compose up -d --build
-
-# http://localhost:8000 접속
+python3 --version
 ```
 
-> 첫 빌드 시 Java + Python 패키지 설치로 2~5분 소요.  
-> KoNLPy JVM 초기화(최대 30초)는 서버 시작 후 백그라운드에서 자동 진행됩니다.  
-> 우측 상단 **KoNLPy ✓ / SentiLex ✓** 배지가 초록색이 되면 분석 준비 완료.
+- `Python 3.x.x` 가 나오면 ✅ 이미 설치되어 있습니다.
+- `command not found` 가 나오면 아래 링크에서 설치하세요.  
+  → https://www.python.org/downloads/
+
+---
+
+### Step 1. 파일 다운로드
+
+GitHub 페이지 상단의 **Code → Download ZIP** 버튼을 클릭합니다.
+
+```
+다운로드된 ZIP 파일을 더블클릭해서 압축 해제
+```
+
+압축 해제하면 `navercrawlerv3` 폴더가 생성됩니다.
+
+---
+
+### Step 2. 터미널에서 폴더로 이동
 
 ```bash
-docker-compose down   # 종료
+cd ~/Downloads/navercrawlerv3
+```
+
+> 만약 다른 위치에 압축 해제했다면, Finder에서 폴더를 찾아 우클릭 → **폴더에서 터미널 열기**를 선택하세요.
+
+---
+
+### Step 3. 패키지 설치
+
+아래 명령어를 입력합니다. (최초 1회만 실행하면 됩니다)
+
+```bash
+pip3 install -r requirements.txt
+```
+
+설치 중에 여러 줄이 출력되는 것은 정상입니다. 끝날 때까지 기다려 주세요.  
+처음 설치 시 `kiwipiepy` 모델 파일(약 50MB) 다운로드로 1~2분 소요될 수 있습니다.
+
+> ⚠️ `pip3: command not found` 오류가 나면 `pip install -r requirements.txt` 로 시도해 보세요.
+
+---
+
+### Step 4. 서버 실행
+
+```bash
+python3 main.py
+```
+
+아래와 같은 메시지가 나오면 정상입니다.
+
+```
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+```
+
+> `Quantization is not supported for ArchType::neon` 메시지는 M1/M2/M3 Mac에서 정상적으로 나오는 경고입니다. 무시하세요.
+
+---
+
+### Step 5. 대시보드 접속
+
+브라우저에서 아래 주소로 접속합니다.
+
+```
+http://localhost:8000
 ```
 
 ---
 
-### 방법 2 — Python 직접 실행 (Java 필요)
+### 서버 종료 방법 (Mac)
+
+터미널에서 `Ctrl + C` 를 누르면 서버가 종료됩니다.
+
+---
+
+### 다음 번에 다시 실행할 때 (Mac)
+
+Step 1~3은 생략하고 바로 아래만 실행합니다.
 
 ```bash
-# 1. Java 17+ 설치 확인
-java -version
+cd ~/Downloads/navercrawlerv3
+python3 main.py
+```
 
-# 2. 의존성 설치
-cd naver-dashboard/backend
+---
+
+### 오류 해결 (Mac)
+
+**포트가 이미 사용 중이라는 오류가 날 때**
+
+```
+ERROR: [Errno 48] address already in use
+```
+
+아래 명령어로 기존 서버를 종료하고 다시 실행하세요.
+
+```bash
+lsof -ti :8000 | xargs kill -9
+python3 main.py
+```
+
+---
+
+## 4. Windows에서 실행하기
+
+### 사전 준비: Python 설치
+
+**① Python 다운로드**
+
+→ https://www.python.org/downloads/ 접속 후 **Download Python 3.x.x** 클릭
+
+**② 설치 시 중요**
+
+설치 프로그램 실행 후 **반드시** 아래 옵션을 체크하고 설치하세요.
+
+```
+☑ Add Python to PATH   ← 이것을 반드시 체크해야 합니다!
+```
+
+체크하지 않으면 명령어가 작동하지 않습니다.
+
+**③ 설치 확인**
+
+시작 메뉴 검색에서 `cmd` 입력 → **명령 프롬프트** 실행 후 입력:
+
+```cmd
+python --version
+```
+
+`Python 3.x.x` 가 출력되면 성공입니다.
+
+---
+
+### Step 1. 파일 다운로드
+
+GitHub 페이지 상단의 **Code → Download ZIP** 버튼을 클릭합니다.
+
+다운로드된 ZIP 파일을 우클릭 → **모두 압축 풀기** → 원하는 위치에 압축 해제합니다.  
+예: `C:\Users\사용자이름\Downloads\navercrawlerv3`
+
+---
+
+### Step 2. 명령 프롬프트에서 폴더로 이동
+
+시작 메뉴에서 `cmd` 검색 → **명령 프롬프트** 실행 후:
+
+```cmd
+cd C:\Users\사용자이름\Downloads\navercrawlerv3
+```
+
+> 💡 더 쉬운 방법: 파일 탐색기에서 `navercrawlerv3` 폴더를 연 후,  
+> 주소창을 클릭해서 `cmd` 를 입력하고 Enter를 누르면 해당 폴더에서 바로 명령 프롬프트가 열립니다.
+
+---
+
+### Step 3. 패키지 설치
+
+아래 명령어를 입력합니다. (최초 1회만 실행하면 됩니다)
+
+```cmd
 pip install -r requirements.txt
-
-# 3. 서버 실행
-python main.py
-
-# 4. http://localhost:8000 접속
 ```
+
+설치 중에 여러 줄이 출력되는 것은 정상입니다. 끝날 때까지 기다려 주세요.  
+처음 설치 시 `kiwipiepy` 모델 파일(약 50MB) 다운로드로 1~2분 소요될 수 있습니다.
+
+---
+
+### Step 4. 서버 실행
+
+```cmd
+python main.py
+```
+
+아래와 같은 메시지가 나오면 정상입니다.
+
+```
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+```
+
+---
+
+### Step 5. 대시보드 접속
+
+브라우저(Chrome, Edge 등)에서 아래 주소로 접속합니다.
+
+```
+http://localhost:8000
+```
+
+---
+
+### 서버 종료 방법 (Windows)
+
+명령 프롬프트에서 `Ctrl + C` 를 누르면 서버가 종료됩니다.
+
+---
+
+### 다음 번에 다시 실행할 때 (Windows)
+
+Step 1~3은 생략하고 바로 아래만 실행합니다.
+
+```cmd
+cd C:\Users\사용자이름\Downloads\navercrawlerv3
+python main.py
+```
+
+---
+
+### 오류 해결 (Windows)
+
+**포트가 이미 사용 중이라는 오류가 날 때**
+
+```
+ERROR: [Errno 10048] address already in use
+```
+
+명령 프롬프트를 **관리자 권한으로 실행**한 후:
+
+```cmd
+netstat -ano | findstr :8000
+```
+
+출력된 결과의 맨 오른쪽 숫자(PID)를 확인한 후:
+
+```cmd
+taskkill /PID [숫자] /F
+```
+
+예: `taskkill /PID 12345 /F`
+
+그 다음 다시 `python main.py` 를 실행합니다.
+
+**`pip` 명령어를 찾을 수 없다는 오류가 날 때**
+
+Python 설치 시 **Add Python to PATH** 옵션을 체크하지 않은 경우입니다.  
+Python을 재설치하면서 반드시 해당 옵션을 체크하세요.
+
+---
+
+## 5. 대시보드 사용 방법
+
+### ① API 설정
+
+처음 접속하면 상단에 **API 설정** 패널이 열려 있습니다.
+
+- **Client ID**: 네이버 개발자 센터에서 발급받은 Client ID 입력
+- **Client Secret**: Client Secret 입력
+- **저장 버튼** 클릭 → 브라우저에 자동 저장 (다음 방문 시 자동 입력)
+
+우측 상단에 `✓ KoNLPy` / `✓ SentiLex` 배지가 초록색이 되면 분석 준비 완료입니다.
+
+---
+
+### ② 검색 설정
+
+| 항목 | 설명 |
+|------|------|
+| 검색어 | 분석할 키워드 입력 (예: `인공지능`, `카카오페이`) |
+| 검색 유형 | 뉴스 / 블로그 / 카페 / 웹문서 중 선택 |
+| 시작일 / 종료일 | 분석할 날짜 범위 (카페는 날짜 필터 미지원) |
+| 최대 건수 | 수집할 최대 게시글 수 (기본 300건, 최대 1000건) |
+| 전체 수집 체크박스 | 체크 시 최대 1000건 자동 설정 |
+
+**▶ 분석 시작** 버튼을 클릭하거나 검색어 입력 후 `Enter` 를 누릅니다.
+
+---
+
+### ③ 결과 확인
+
+분석이 완료되면 아래 순서로 결과가 표시됩니다.
+
+1. **최신 게시글 Top 5** — 가장 최근 게시글 카드
+2. **키워드 빈도 분석** — 가로 막대 차트
+3. **감정 분석** — 도넛 차트 + 긍정/부정 상위 기사
+4. **연관어 네트워크** — 드래그해서 이동 가능한 인터랙티브 그래프
+5. **게시글별 감정 분석** — 전체 게시글 점수 테이블 (검색/필터/정렬 가능)
+
+---
+
+### ④ 이메일 리포트 발송 (선택)
+
+분석 완료 후 하단에 **이메일 발송** 패널이 나타납니다.
+
+- Gmail 사용 시 **앱 비밀번호**가 필요합니다.
+  → https://myaccount.google.com/apppasswords 에서 발급
+- 키워드 CSV 파일이 첨부된 HTML 리포트가 발송됩니다.
+
+---
+
+## 6. 기능 설명
+
+### 감정 분석이란?
+
+**KNU SentiLex** (한국어 감성 사전)를 사용해 각 게시글의 긍정/부정 정도를 수치로 계산합니다.
+
+- 점수 **양수** (+) → 긍정적 내용
+- 점수 **음수** (−) → 부정적 내용
+- 점수 **0** → 중립
+
+### 연관어 네트워크란?
+
+같은 게시글에서 함께 자주 등장하는 단어들을 선으로 연결한 그래프입니다.
+
+- **초록색 노드** → 긍정적 단어
+- **빨간색 노드** → 부정적 단어
+- **파란색 노드** → 중립 단어
+- 노드를 **드래그**해서 위치를 이동할 수 있습니다.
+- **스크롤**로 확대/축소가 가능합니다.
+
+### 검색 유형별 날짜 지원
+
+| 검색 유형 | 날짜 범위 필터 |
+|-----------|---------------|
+| 뉴스 | ✅ 지원 |
+| 블로그 | ✅ 지원 |
+| 웹문서 | ✅ 지원 |
+| 카페 | ❌ 미지원 (네이버 API 제한) |
+
+---
+
+## 7. 자주 묻는 질문
+
+**Q. "해당 기간에 검색 결과가 없습니다" 오류가 납니다.**
+
+날짜 범위를 너무 좁게 설정했거나, 해당 기간에 실제로 결과가 없는 경우입니다.  
+날짜 범위를 넓히거나, 시작일/종료일 입력창을 **비워두고** 실행해 보세요.
+
+---
+
+**Q. "API 인증 실패" 오류가 납니다.**
+
+Client ID 또는 Client Secret이 올바르지 않습니다.  
+네이버 개발자 센터에서 키를 다시 확인하고, 복사-붙여넣기 시 앞뒤 공백이 없는지 확인하세요.
+
+---
+
+**Q. 서버 실행 후 배지가 계속 로딩 중입니다.**
+
+서버 시작 후 KoNLPy 초기화에 최대 30초가 소요됩니다. 잠시 기다려 주세요.  
+배지가 초록색이 되면 분석 기능이 활성화됩니다.
+
+---
+
+**Q. 카페 검색 시 날짜가 표시되지 않습니다.**
+
+네이버 카페 검색 API는 날짜 정보를 제공하지 않습니다.  
+이는 네이버 API 자체의 제한사항으로, 해결 방법이 없습니다.
+
+---
+
+**Q. 수집 건수가 최대 1000건인 이유가 무엇인가요?**
+
+네이버 검색 API는 `start` 파라미터 한도가 1000이라, 기술적으로 최대 1000건까지만 수집 가능합니다.
+
+---
+
+**Q. 매번 실행할 때마다 패키지를 설치해야 하나요?**
+
+아닙니다. `pip install -r requirements.txt` 는 최초 1회만 실행하면 됩니다.  
+이후에는 `python3 main.py` (Mac) 또는 `python main.py` (Windows) 만 실행하면 됩니다.
 
 ---
 
 ## 📁 프로젝트 구조
 
 ```
-naver-dashboard/
-├── backend/
-│   ├── main.py          # FastAPI 앱
-│   ├── naver.py         # 네이버 API 클라이언트 (페이지네이션)
-│   ├── nlp.py           # KoNLPy + KNU SentiLex + 분석 로직
-│   ├── requirements.txt
-│   └── data/            # KnuSentiLex.json (자동 다운로드)
-├── frontend/
-│   └── index.html       # 대시보드 UI (Chart.js + D3.js)
-├── Dockerfile
-├── docker-compose.yml
-└── README.md
+navercrawlerv3/
+├── main.py              # FastAPI 서버 메인
+├── naver.py             # 네이버 API 클라이언트
+├── nlp.py               # 형태소 분석 + 감정 분석 로직
+├── requirements.txt     # Python 패키지 목록
+├── data/                # KNU SentiLex 사전 (첫 실행 시 자동 생성)
+│   └── SentiWord_Dict.txt
+└── frontend/
+    └── index.html       # 대시보드 UI
 ```
 
 ---
 
-## 🌐 외부 배포
+## 🛠 사용 기술
 
-**Railway (GitHub 연동, 무료)**
-```bash
-# GitHub Push 후 railway.app에서 연결
-# Root directory: backend
-# Start command: uvicorn main:app --host 0.0.0.0 --port $PORT
-```
-
-**Fly.io**
-```bash
-fly launch
-fly deploy
-```
-
----
-
-## API 엔드포인트
-
-| Method | Path | 설명 |
-|--------|------|------|
-| GET | `/api/status` | KoNLPy / SentiLex 준비 상태 |
-| POST | `/api/latest` | 최신 5건 가져오기 |
-| POST | `/api/analyze` | 전체 수집 + NLP 분석 |
+| 기술 | 역할 |
+|------|------|
+| FastAPI | Python 웹 서버 |
+| kiwipiepy | 한국어 형태소 분석 (Java 불필요) |
+| KNU SentiLex | 한국어 감성 사전 |
+| Chart.js | 키워드 빈도 차트 |
+| D3.js | 연관어 네트워크 시각화 |
 
 ---
 
 ## ⚠️ 주의사항
 
-- 네이버 검색 API: 일 25,000건 호출 한도
-- 한 번에 최대 1,000건 수집 가능 (start 파라미터 한도)
-- KoNLPy Okt 초기화는 서버 시작 시 백그라운드 실행 (최대 30초)
-- KNU SentiLex는 최초 실행 시 GitHub에서 자동 다운로드 후 `backend/data/`에 캐싱
+- 네이버 검색 API 무료 한도: **일 25,000건**
+- 카페 검색은 날짜 범위 필터가 지원되지 않습니다.
+- KNU SentiLex 사전은 최초 실행 시 GitHub에서 자동 다운로드되어 `data/` 폴더에 저장됩니다.
+- API 키는 브라우저 localStorage에만 저장되며, 서버에는 전송되지 않습니다.

@@ -162,6 +162,27 @@ def _score_text(text: str) -> int:
     return score
 
 
+
+def _resolve_date(item: dict) -> str:
+    """parsed_date 우선, 없으면 원본 필드에서 직접 추출."""
+    # 1) 이미 파싱된 날짜
+    d = item.get("parsed_date")
+    if d:
+        return str(d)
+    # 2) postdate (YYYYMMDD → YYYY-MM-DD)
+    pd = (item.get("postdate") or "").strip()
+    if pd and len(pd) == 8 and pd.isdigit():
+        return f"{pd[:4]}-{pd[4:6]}-{pd[6:8]}"
+    # 3) pubDate (RFC 2822 → 앞 날짜 부분만)
+    try:
+        pub = (item.get("pubDate") or "").strip()
+        if pub:
+            from email.utils import parsedate_to_datetime
+            return parsedate_to_datetime(pub).date().isoformat()
+    except Exception:
+        pass
+    return ""
+
 def sentiment_analysis(items: list[dict]) -> dict:
     records = []
     for item in items:
@@ -171,7 +192,7 @@ def sentiment_analysis(items: list[dict]) -> dict:
         records.append({
             "title": item.get("title", ""),
             "link": item.get("link", ""),
-            "date": item.get("parsed_date", ""),
+            "date": _resolve_date(item),
             "score": s,
             "label": label,
         })

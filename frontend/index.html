@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="dark">
+<html lang="ko" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -415,7 +415,7 @@ select {
     <div class="nlp-badge wait" id="badgeKonlpy">KoNLPy ···</div>
     <div class="nlp-badge wait" id="badgeSenti">SentiLex ···</div>
     <div id="clock">--:--:--</div>
-    <span class="theme-icon" id="themeIcon" onclick="toggleTheme()" title="라이트/다크 전환">🌙</span>
+    <span class="theme-icon" id="themeIcon" onclick="toggleTheme()" title="라이트/다크 전환">☀️</span>
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="테마 전환"></button>
   </div>
 </header>
@@ -446,15 +446,31 @@ select {
       <div class="search-row">
         <div class="form-field"><label>검색어</label><input type="text" id="queryInput" placeholder="예) 인공지능, 스타트업, ESG 경영" autocomplete="off"></div>
         <div class="form-field sm"><label>검색 유형</label>
-          <select id="searchType">
+          <select id="searchType" onchange="onSearchTypeChange()">
             <option value="news">뉴스</option>
             <option value="blog">블로그</option>
+            <option value="cafe">카페</option>
             <option value="web">웹문서</option>
           </select>
         </div>
-        <div class="form-field sm"><label>시작일</label><input type="date" id="dateFrom"></div>
-        <div class="form-field sm"><label>종료일</label><input type="date" id="dateTo"></div>
+        <div class="form-field sm" id="wrapDateFrom">
+          <label>시작일</label>
+          <input type="date" id="dateFrom">
+        </div>
+        <div class="form-field sm" id="wrapDateTo">
+          <label>종료일</label>
+          <input type="date" id="dateTo">
+        </div>
+        <div id="cafeNotice" style="display:none;align-self:flex-end;font-size:11px;color:var(--amber);font-family:'IBM Plex Mono',monospace;padding-bottom:10px;white-space:nowrap">
+          ⚠ 카페는 날짜 필터 미지원
+        </div>
         <div class="form-field xs"><label>최대 건수</label><input type="number" id="maxItems" value="300" min="10" max="1000"></div>
+        <div class="form-field xs" style="justify-content:flex-end">
+          <label style="cursor:pointer;display:flex;align-items:center;gap:6px">
+            <input type="checkbox" id="fetchAll" onchange="onFetchAllChange()" style="width:15px;height:15px;accent-color:var(--green)">
+            <span style="font-size:12px;white-space:nowrap">전체 수집</span>
+          </label>
+        </div>
         <button class="btn-analyze" id="btnAnalyze" onclick="doAnalyze()">▶ 분석 시작</button>
       </div>
     </div>
@@ -522,6 +538,39 @@ select {
 
   </div><!-- /analysis-grid -->
 
+  <!-- ARTICLE SENTIMENT TABLE -->
+  <div class="panel" id="articleSentiPanel" style="display:none">
+    <div class="panel-hdr">
+      <div class="panel-title"><div class="ptdot" style="background:var(--blue)"></div>게시글별 감정 분석</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="text" id="artSentiSearch" placeholder="제목 검색..." oninput="filterArticles()"
+          style="padding:4px 10px;border:1px solid var(--b1);border-radius:4px;background:var(--inp-bg);color:var(--text);font-size:12px;width:180px">
+        <select id="artSentiFilter" onchange="filterArticles()"
+          style="padding:4px 8px;border:1px solid var(--b1);border-radius:4px;background:var(--inp-bg);color:var(--text);font-size:12px">
+          <option value="all">전체</option>
+          <option value="positive">긍정만</option>
+          <option value="negative">부정만</option>
+          <option value="neutral">중립만</option>
+        </select>
+        <span id="artSentiBadge" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text3)"></span>
+      </div>
+    </div>
+    <div class="panel-body" style="overflow-x:auto">
+      <table id="artSentiTable" style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="background:var(--bg3);border-bottom:2px solid var(--b1)">
+            <th style="padding:8px 10px;text-align:left;color:var(--text2);font-weight:500;white-space:nowrap;width:60px">감정</th>
+            <th style="padding:8px 10px;text-align:left;color:var(--text2);font-weight:500;white-space:nowrap;width:70px;cursor:pointer" onclick="sortArticles('score')" id="thScore">점수 ↕</th>
+            <th style="padding:8px 10px;text-align:left;color:var(--text2);font-weight:500">제목</th>
+            <th style="padding:8px 10px;text-align:left;color:var(--text2);font-weight:500;white-space:nowrap;width:100px;cursor:pointer" onclick="sortArticles('date')" id="thDate">날짜 ↕</th>
+          </tr>
+        </thead>
+        <tbody id="artSentiBody"></tbody>
+      </table>
+      <div id="artSentiPager" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 0;font-size:13px"></div>
+    </div>
+  </div>
+
   <!-- EMAIL PANEL -->
   <div class="panel" id="emailPanel" style="display:none">
     <div class="panel-hdr">
@@ -553,7 +602,7 @@ select {
 <script>
 const API = '';
 let _lastData = null;
-let _isDark = true;
+let _isDark = false;
 
 // ── CLOCK ─────────────────────────────────────────────────────────────────
 setInterval(() => {
@@ -577,7 +626,12 @@ function toggleTheme() {
 // restore saved theme
 (function() {
   const saved = localStorage.getItem('naver_theme');
-  if (saved === 'light') {
+  if (saved === 'dark') {
+    _isDark = true;
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.getElementById('themeIcon').textContent = '🌙';
+  } else {
+    // default: light
     _isDark = false;
     document.documentElement.setAttribute('data-theme', 'light');
     document.getElementById('themeIcon').textContent = '☀️';
@@ -647,6 +701,22 @@ pollStatus();
 
 document.getElementById('queryInput').addEventListener('keydown', e => { if (e.key === 'Enter') doAnalyze(); });
 
+function onFetchAllChange() {
+  const all = document.getElementById('fetchAll').checked;
+  const inp = document.getElementById('maxItems');
+  inp.value = all ? 1000 : 300;
+  inp.disabled = all;
+}
+
+function onSearchTypeChange() {
+  const isCafe = document.getElementById('searchType').value === 'cafe';
+  document.getElementById('dateFrom').disabled = isCafe;
+  document.getElementById('dateTo').disabled   = isCafe;
+  document.getElementById('wrapDateFrom').style.opacity = isCafe ? '.4' : '1';
+  document.getElementById('wrapDateTo').style.opacity   = isCafe ? '.4' : '1';
+  document.getElementById('cafeNotice').style.display   = isCafe ? 'block' : 'none';
+}
+
 // ── ANALYZE ───────────────────────────────────────────────────────────────
 async function doAnalyze() {
   const cid = document.getElementById('clientId').value.trim();
@@ -704,11 +774,12 @@ function renderAll(d) {
   document.getElementById('sbTotal').textContent = d.total.toLocaleString();
   document.getElementById('sbRange').textContent = d.date_min && d.date_max ? `${d.date_min} ~ ${d.date_max}` : '날짜 정보 없음';
   document.getElementById('sbQuery').textContent = d.query;
-  document.getElementById('sbType').textContent  = { news:'뉴스', blog:'블로그', web:'웹문서' }[d.search_type] || d.search_type;
+  document.getElementById('sbType').textContent  = { news:'뉴스', blog:'블로그', cafe:'카페', web:'웹문서' }[d.search_type] || d.search_type;
   renderLatest(d.latest || []);
   renderFreq(d.frequency || []);
   renderSenti(d.sentiment || {});
   renderNet(d.network || {});
+  renderArticles((d.sentiment || {}).articles || []);
 }
 
 // ── LATEST 5 ──────────────────────────────────────────────────────────────
@@ -888,6 +959,131 @@ function renderNet(net) {
     link.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y);
     ng.attr('transform', d => `translate(${d.x},${d.y})`);
   });
+}
+
+// ── ARTICLE SENTIMENT TABLE ───────────────────────────────────────────────
+let _artAll = [];        // 전체 원본
+let _artFiltered = [];   // 필터/정렬 후
+let _artPage = 1;
+const ART_PER_PAGE = 20;
+let _artSort = { key: 'score', dir: -1 };  // default: 점수 내림차순
+
+function renderArticles(articles) {
+  _artAll = articles;
+  _artPage = 1;
+  document.getElementById('articleSentiPanel').style.display = articles.length ? 'block' : 'none';
+  document.getElementById('artSentiSearch').value = '';
+  document.getElementById('artSentiFilter').value = 'all';
+  _artSort = { key: 'score', dir: -1 };
+  _updateArticleHeaders();
+  filterArticles();
+}
+
+function filterArticles() {
+  const q   = (document.getElementById('artSentiSearch').value || '').toLowerCase();
+  const lbl = document.getElementById('artSentiFilter').value;
+  _artFiltered = _artAll.filter(a => {
+    const matchQ   = !q || a.title.toLowerCase().includes(q);
+    const matchLbl = lbl === 'all' || a.label === lbl;
+    return matchQ && matchLbl;
+  });
+  _sortFiltered();
+  _artPage = 1;
+  _renderArticlePage();
+}
+
+function sortArticles(key) {
+  if (_artSort.key === key) _artSort.dir *= -1;
+  else { _artSort.key = key; _artSort.dir = -1; }
+  _updateArticleHeaders();
+  _sortFiltered();
+  _artPage = 1;
+  _renderArticlePage();
+}
+
+function _sortFiltered() {
+  const { key, dir } = _artSort;
+  _artFiltered.sort((a, b) => {
+    const av = key === 'date' ? (a.date || '') : a.score;
+    const bv = key === 'date' ? (b.date || '') : b.score;
+    return av < bv ? -dir : av > bv ? dir : 0;
+  });
+}
+
+function _updateArticleHeaders() {
+  ['score', 'date'].forEach(k => {
+    const el = document.getElementById('th' + k.charAt(0).toUpperCase() + k.slice(1));
+    if (!el) return;
+    const arrow = _artSort.key === k ? (_artSort.dir > 0 ? ' ↑' : ' ↓') : ' ↕';
+    el.textContent = (k === 'score' ? '점수' : '날짜') + arrow;
+    el.style.color = _artSort.key === k ? 'var(--blue)' : 'var(--text2)';
+  });
+}
+
+function _renderArticlePage() {
+  const total = _artFiltered.length;
+  const pages = Math.ceil(total / ART_PER_PAGE) || 1;
+  if (_artPage > pages) _artPage = pages;
+  const slice = _artFiltered.slice((_artPage - 1) * ART_PER_PAGE, _artPage * ART_PER_PAGE);
+
+  document.getElementById('artSentiBadge').textContent = `${total.toLocaleString()}건`;
+
+  const tbody = document.getElementById('artSentiBody');
+  if (!slice.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text3)">표시할 게시글이 없습니다</td></tr>';
+  } else {
+    tbody.innerHTML = slice.map((a, idx) => {
+      const even = ((_artPage - 1) * ART_PER_PAGE + idx) % 2 === 0;
+      const bg   = even ? 'var(--bg2)' : 'var(--bg3)';
+      const [dot, scoreStr, labelStr] =
+        a.label === 'positive' ? ['var(--green)',  (a.score > 0 ? '+' : '') + a.score, '긍정'] :
+        a.label === 'negative' ? ['var(--red)',    String(a.score), '부정'] :
+                                 ['var(--text3)',  String(a.score), '중립'];
+      return `<tr style="background:${bg};border-bottom:1px solid var(--b1)">
+        <td style="padding:7px 10px;white-space:nowrap">
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:${dot}">
+            <span style="width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0"></span>${labelStr}
+          </span>
+        </td>
+        <td style="padding:7px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:${dot};font-weight:600;white-space:nowrap">${scoreStr}</td>
+        <td style="padding:7px 10px;line-height:1.45">
+          <a href="${esc(a.link)}" target="_blank" rel="noopener"
+             style="color:var(--text);text-decoration:none;font-size:13px"
+             onmouseover="this.style.color='var(--blue)'" onmouseout="this.style.color='var(--text)'"
+          >${esc(a.title) || '(제목 없음)'}</a>
+        </td>
+        <td style="padding:7px 10px;color:var(--text3);font-size:12px;font-family:'IBM Plex Mono',monospace;white-space:nowrap">${a.date || '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // 페이지네이터
+  const pager = document.getElementById('artSentiPager');
+  if (pages <= 1) { pager.innerHTML = ''; return; }
+  let html = '';
+  const btn = (p, label, active, disabled) =>
+    `<button onclick="goArtPage(${p})"
+       style="padding:4px 10px;border:1px solid ${active ? 'var(--blue)' : 'var(--b1)'};
+              border-radius:4px;background:${active ? 'var(--blue)' : 'var(--inp-bg)'};
+              color:${active ? '#fff' : disabled ? 'var(--text3)' : 'var(--text)'};
+              cursor:${disabled ? 'default' : 'pointer'};font-size:12px"
+       ${disabled ? 'disabled' : ''}>${label}</button>`;
+  html += btn(_artPage - 1, '‹ 이전', false, _artPage === 1);
+  const range = 2;
+  for (let p = Math.max(1, _artPage - range); p <= Math.min(pages, _artPage + range); p++) {
+    html += btn(p, p, p === _artPage, false);
+  }
+  html += btn(_artPage + 1, '다음 ›', false, _artPage === pages);
+  html += `<span style="font-size:12px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-left:6px">${_artPage} / ${pages}</span>`;
+  pager.innerHTML = html;
+}
+
+function goArtPage(p) {
+  const pages = Math.ceil(_artFiltered.length / ART_PER_PAGE) || 1;
+  if (p < 1 || p > pages) return;
+  _artPage = p;
+  _renderArticlePage();
+  document.getElementById('articleSentiPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ── EMAIL ─────────────────────────────────────────────────────────────────

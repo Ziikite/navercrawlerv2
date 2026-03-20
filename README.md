@@ -88,14 +88,14 @@ GitHub 페이지 상단의 **Code → Download ZIP** 버튼을 클릭합니다.
 다운로드된 ZIP 파일을 더블클릭해서 압축 해제
 ```
 
-압축 해제하면 `navercrawlerv3` 폴더가 생성됩니다.
+압축 해제하면 `navercrawlerv2` 폴더가 생성됩니다.
 
 ---
 
 ### Step 2. 터미널에서 폴더로 이동
 
 ```bash
-cd ~/Downloads/navercrawlerv3
+cd ~/Downloads/navercrawlerv2
 ```
 
 > 만약 다른 위치에 압축 해제했다면, Finder에서 폴더를 찾아 우클릭 → **폴더에서 터미널 열기**를 선택하세요.
@@ -155,7 +155,7 @@ http://localhost:8000
 Step 1~3은 생략하고 바로 아래만 실행합니다.
 
 ```bash
-cd ~/Downloads/navercrawlerv3
+cd ~/Downloads/navercrawlerv2
 python3 main.py
 ```
 
@@ -213,7 +213,7 @@ python --version
 GitHub 페이지 상단의 **Code → Download ZIP** 버튼을 클릭합니다.
 
 다운로드된 ZIP 파일을 우클릭 → **모두 압축 풀기** → 원하는 위치에 압축 해제합니다.  
-예: `C:\Users\사용자이름\Downloads\navercrawlerv3`
+예: `C:\Users\사용자이름\Downloads\navercrawlerv2`
 
 ---
 
@@ -222,10 +222,10 @@ GitHub 페이지 상단의 **Code → Download ZIP** 버튼을 클릭합니다.
 시작 메뉴에서 `cmd` 검색 → **명령 프롬프트** 실행 후:
 
 ```cmd
-cd C:\Users\사용자이름\Downloads\navercrawlerv3
+cd C:\Users\사용자이름\Downloads\navercrawlerv2
 ```
 
-> 💡 더 쉬운 방법: 파일 탐색기에서 `navercrawlerv3` 폴더를 연 후,  
+> 💡 더 쉬운 방법: 파일 탐색기에서 `navercrawlerv2` 폴더를 연 후,  
 > 주소창을 클릭해서 `cmd` 를 입력하고 Enter를 누르면 해당 폴더에서 바로 명령 프롬프트가 열립니다.
 
 ---
@@ -279,7 +279,7 @@ http://localhost:8000
 Step 1~3은 생략하고 바로 아래만 실행합니다.
 
 ```cmd
-cd C:\Users\사용자이름\Downloads\navercrawlerv3
+cd C:\Users\사용자이름\Downloads\navercrawlerv2
 python main.py
 ```
 

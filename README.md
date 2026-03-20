@@ -27,10 +27,14 @@
 ### 방법 1 — Docker (권장)
 
 ```bash
-cd naver-dashboard
-docker-compose up -d --build
+# 1. 패키지 설치 (최초 1회)
+pip install -r requirements.txt
 
-# http://localhost:8000 접속
+# 2. 서버 실행
+python main.py
+
+
+# 3. → http://localhost:8000 접속
 ```
 
 > 첫 빌드 시 Java + Python 패키지 설치로 2~5분 소요.  
@@ -43,59 +47,20 @@ docker-compose down   # 종료
 
 ---
 
-### 방법 2 — Python 직접 실행 (Java 필요)
-
-```bash
-# 1. Java 17+ 설치 확인
-java -version
-
-# 2. 의존성 설치
-cd naver-dashboard/backend
-pip install -r requirements.txt
-
-# 3. 서버 실행
-python main.py
-
-# 4. http://localhost:8000 접속
-```
-
----
-
 ## 📁 프로젝트 구조
 
 ```
-naver-dashboard/
-├── backend/
-│   ├── main.py          # FastAPI 앱
-│   ├── naver.py         # 네이버 API 클라이언트 (페이지네이션)
-│   ├── nlp.py           # KoNLPy + KNU SentiLex + 분석 로직
-│   ├── requirements.txt
-│   └── data/            # KnuSentiLex.json (자동 다운로드)
-├── frontend/
-│   └── index.html       # 대시보드 UI (Chart.js + D3.js)
-├── Dockerfile
-├── docker-compose.yml
-└── README.md
+navercrawlerv2/
+├── main.py
+├── naver.py
+├── nlp.py
+├── requirements.txt
+└── frontend/
+    └── index.html  
 ```
 
 ---
 
-## 🌐 외부 배포
-
-**Railway (GitHub 연동, 무료)**
-```bash
-# GitHub Push 후 railway.app에서 연결
-# Root directory: backend
-# Start command: uvicorn main:app --host 0.0.0.0 --port $PORT
-```
-
-**Fly.io**
-```bash
-fly launch
-fly deploy
-```
-
----
 
 ## API 엔드포인트
 
